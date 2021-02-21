@@ -1,1 +1,0 @@
-function GiveMeSomething(input) local output = 0 if (input == nil) then output = math.random(100, 999) 
