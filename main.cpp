@@ -228,33 +228,38 @@ bool CreateFile(std::string filename, const std::string& content) {
 //	6.4
 //////////////////////////////////////////////////////////////////////////////
 
-std::string ReadFile(std::string filename) {
+std::string* ReadFile(std::string filename) {
 
-	if (filename.empty()) return std::string();
+	if (filename.empty()) return nullptr;
 
 	filename += ".txt";
 
-	if (!fs::exists(filename)) return std::string();
+	if (!fs::exists(filename)) return nullptr;
 
 	std::ifstream fin(filename);
-	if (!fin.is_open()) return std::string();
+	if (!fin.is_open()) return nullptr;
 
-	char* buffer = new char[BUFFER_SIZE];
+	std::string* sContent = new (std::nothrow) std::string;
+	if (!sContent) return nullptr;
+
+	char buffer[BUFFER_SIZE];
+
 	while (!fin.eof()) {
 		fin.getline(buffer, BUFFER_SIZE);
+
+		*sContent += buffer;
 	}
 
 	fin.close();
-	return buffer;
+	return sContent;
 }
 
 void PrintFile(std::string filename) {
 
-	std::string* content = new std::string; 
-	*content = ReadFile(filename);
+	std::string* content = ReadFile(filename);
 
-	if (content->empty()) { 
-		delete content; 
+	if (!content || content->empty()) {
+		delete content;
 		return;
 	}
 
@@ -270,16 +275,16 @@ bool SearchFile(std::string filename, std::string request) {
 
 	if (filename.empty()) return false;
 
-	std::string* sText = new std::string;
-	*sText = ReadFile(filename);
+	std::string* sText = ReadFile(filename);
 
-	if (sText->empty()) {
+	if (!sText || sText->empty()) {
 		delete sText;
 		return false;
 	}
 
 	size_t nPos = sText->find(request);
 
+	delete sText;
 	return nPos != std::string::npos ? true : false;
 }
 
@@ -348,12 +353,21 @@ int main() {
 
 	std::cout << "\nPreparing third file...\n";
 
-	const std::string cnt1 = ReadFile(filename);
-	const std::string cnt2 = ReadFile(filename2);
+	//const std::string cnt1 = ReadFile(filename);
+	//const std::string cnt2 = ReadFile(filename2);
+	std::string* sFileContent1 = ReadFile(filename);
+	if (!sFileContent1) return 1;
+
+	std::string* sFileContent2 = ReadFile(filename2);
+	if (!sFileContent2) return 1;
+
 	std::string filename3 = "lua_script";
 
-	if (!CreateFile(filename3, cnt1 + cnt2)) return 1;
+	if (!CreateFile(filename3, *sFileContent1 + *sFileContent2)) return 1;
 	PrintFile(filename3);
+
+	delete sFileContent1;
+	delete sFileContent2;
 
 	//////////////////////////////////////////////////////////////////////////////
 	//	Lua Init
